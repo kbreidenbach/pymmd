@@ -1,0 +1,14 @@
+Source: pymmd
+Section: python
+Priority: optional
+Maintainer: ATT (att-developers@peak6.com)
+Build-Depends: debhelper (>=7.0.50~), cdbs, python-dev, python-setuptools, python-support
+XS-Python-Version: >=2.6
+Standards-Version: 3.9.1
+
+Package: pymmd
+Architecture: any
+XB-Python-Version: ${python:Versions}
+Depends: ${misc:Depends}, ${python:Depends}
+Description: A pure python mmd driver
+ A pure python mmd driver
