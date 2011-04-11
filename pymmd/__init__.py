@@ -220,7 +220,7 @@ def decode(bs):
                              (repr(typ), ord(typ)))
 
 def encode_uint(v, bs):
-    while v >= 0x7f:
+    while v > 0x7f:
         bs.append(0x80 | (v & 0x7f))
         v >>= 7
     bs.append(v)
