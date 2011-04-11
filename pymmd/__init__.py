@@ -149,6 +149,16 @@ def decode_int(bs):
     v = decode_uint(bs)
     return (v >> 1) ^ -(v & 1)
 
+def decode_double(bs):
+    v = struct.unpack("!d", str(bs[:8]))
+    del bs[:8]
+    return v
+
+def decode_float(bs):
+    v = struct.unpack("!f", str(v[:4]))
+    del bs[:4]
+    return v
+
 def decode_uuid(bs):
     u = uuid.UUID(bytes=str(bs[:16]))
     del bs[:16]
@@ -196,6 +206,8 @@ mmd_decoders = {
     "l": decode_uint,
     "I": decode_int,
     "i": decode_uint,
+    "D": decode_double,
+    "d": decode_float,
     "T": lambda bs: True,
     "F": lambda bs: False,
     "N": lambda bs: None,
@@ -228,6 +240,12 @@ def encode_uint(v, bs):
 def encode_int(v, bs):
     return encode_uint(v * 2 if v >= 0 else -v * 2 - 1, bs)
 
+def encode_double(v, bs):
+    return bs.extend(struct.pack("!d", v))
+
+def encode_float(v, bs):
+    return bs.extend(struct.pack("!f", v))
+
 def encode_str(v, bs):
     encode_uint(len(v), bs)
     bs.extend(v)
@@ -249,6 +267,7 @@ def encode_uuid(uuid, bs):
 mmd_code_and_encoders = {
     int: ("L", encode_int),
     long: ("L", encode_int),
+    float: ("D", encode_double),
     bool: ("", encode_bool),
     NoneType: ("N", None),
     str: ("S", encode_str),
