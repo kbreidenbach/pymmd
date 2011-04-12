@@ -26,7 +26,7 @@ class _MMDEncodable(object):
         return bs
 
 def _resolve_body(body, kwargs):
-    assert (body is not None) ^ (len(kwargs) > 0), \
+    assert not ((body is not None) and (len(kwargs) > 0)), \
         "Must pass one and only one of body or **kwargs (not both) " \
         "as channel message body (%s)"
     if len(kwargs) > 0:
