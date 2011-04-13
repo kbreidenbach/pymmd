@@ -2,7 +2,6 @@ import errno, logging, socket, struct, time, threading, traceback, uuid
 from datetime import datetime
 from collections import namedtuple
 from types import NoneType
-import pymongo
 from futures import Future
 
 wire_version = (1,0)
