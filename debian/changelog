@@ -1,3 +1,11 @@
+pymmd (0.1.2) UNRELEASED; urgency=low
+
+  * _resolve_body(): allow body to be None
+  * in addition to closing channel, log error if handler raises exception
+  * don't need pymongo, no idea why it was being imported
+
+ -- Scott Parish <sparish@peak6.com>  Fri, 15 Apr 2011 14:38:24 -0600
+
 pymmd (0.1.1) UNRELEASED; urgency=low
 
   * fix bug in encoding ints
