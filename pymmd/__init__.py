@@ -1,4 +1,4 @@
-import errno, logging, socket, struct, time, threading, traceback, uuid
+import errno, logging, socket, struct, sys, time, threading, traceback, uuid
 from datetime import datetime
 from collections import namedtuple
 from types import NoneType
@@ -32,11 +32,40 @@ def _resolve_body(body, kwargs):
         return kwargs
     return body
 
+class MMDErrorCode(object):
+    __slots__ = ('code','name')
+
+    def __init__(self, code, name):
+        self.code = code
+        self.name = name
+
+    def __repr__(self):
+        return 'MMDErrorCode(%d, "%s")' % (self.code, self.name)
+
+errors = [
+    MMDErrorCode(1, "SERVICE_NOT_FOUND"),
+    MMDErrorCode(4, "SERVICE_ERROR"),
+    MMDErrorCode(5, "UNEXPECTED_REMOTE_CHANNEL_CLOSE"),
+    MMDErrorCode(6, "INVALID_REQUEST"),
+    MMDErrorCode(8, "CHANNEL_ADMIN_CLOSED"),
+    MMDErrorCode(9, "INVALID_CHANNEL"),
+]
+
+this_mod = sys.modules[__name__]
+for error in errors:
+    setattr(this_mod, error.name, error)
+
+error_code_to_MMDErrorCode = dict((error.code, error) for error in errors)
+
 class MMDError(Exception, _MMDEncodable):
     def __init__(self, code, msg):
+        if type(code) is int:
+            code = error_code_to_MMDErrorCode[code]
         self.code = code
         self.msg = msg
-        Exception.__init__(self, "code: %s, msg: %s" % (code, msg))
+
+    def __repr__(self):
+        return "MMDError(code=%s, msg=%s)" % (repr(self.code), repr(self.msg))
 
     @staticmethod
     def decode(bs):
