@@ -43,7 +43,7 @@ You can also try subscribing, sending and recieving channel messages,
 and closing the channel:
 
    >>> ch = c.echo3.subscribe(handler=echo3.echo3, body="Test123")
-   >>> ch.send("Ping")
+   >>> ch("Ping")
    handle_message(MMDChannelMessage(chan_id=UUID('c5f1b7c0-5fde-11e0-9c3e-00219b38831e'), body=['pong2', 'Ping']))
    >>> ch.close("Goodbye")
 

@@ -59,6 +59,7 @@ class _MMDReplyable(object):
                                   body = _resolve_body(body, kwargs)))
 
     reply = send
+    __call__ = send
 
     def close(self, body=None, **kwargs):
         self._con.send_msg(MMDChannelClose(chan_id = self.chan_id,
