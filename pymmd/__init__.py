@@ -508,7 +508,7 @@ class MMDService(object):
             logging.error("Exception (%s(%s)) while handling mmd message. "
                           "Channel closed. mmd_msg: %s, stack: %s" %
                           (classname, e.args, msg, traceback.format_exc()))
-            msg.close(MMDError(0, {"type": classname,
+            msg.close(MMDError(4, {"type": classname,
                                    "args": e.args,
                                    "stack": traceback.format_exc()}))
 
