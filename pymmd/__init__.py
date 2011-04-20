@@ -488,6 +488,9 @@ class MMDRemoteService(object):
                                    auth_id=auth_id,
                                    timeout=timeout)
 
+    def listen(self, handler):
+        return self._mmd.listen(service=self._service, handler=handler)
+
 class MMDService(object):
     def __init__(self):
         pass
