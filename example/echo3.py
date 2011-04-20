@@ -1,6 +1,9 @@
 import pymmd
 
 class Echo3(pymmd.MMDService):
+    def set_channel(self, ch):
+        self.ch = ch
+
     def handle_call(self, msg):
         print "handle_call(%s)" % repr(msg)
         return ["pong", msg.body]
