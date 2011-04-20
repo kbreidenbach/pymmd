@@ -412,8 +412,7 @@ class MMDConnection(object):
         cc = MMDChannelCreate(service=service, body=body, timeout=timeout,
                               auth_id=auth_id, chan_type="call", **kwargs)
         with self._chans_lock:
-            self._chans[cc.chan_id] = \
-                _MMDChannel(handler=f.set, create_msg=cc)
+            self._chans[cc.chan_id] = _MMDChannel(handler=f.set, create_msg=cc)
 
         self.send_msg(cc)
         r = f()
