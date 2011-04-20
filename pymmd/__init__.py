@@ -421,8 +421,6 @@ class MMDConnection(object):
         return r
 
     def subscribe(self, handler, service, body, timeout=0, auth_id=None):
-        f = Future()
-
         if auth_id is None:
             auth_id = uuid.uuid1()
 
