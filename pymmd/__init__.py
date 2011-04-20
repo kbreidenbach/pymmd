@@ -432,6 +432,8 @@ class MMDConnection(object):
             self._chans[cc.chan_id] = \
                 _MMDChannel(handler=handler, create_msg=cc)
 
+        if hasattr(handler, "set_channel"):
+            handler.set_channel(cc)
         self.send_msg(cc)
         cc._con = self
         return cc
