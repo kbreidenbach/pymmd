@@ -403,8 +403,12 @@ class MMDConnection(object):
 
             logging.warn("MMD: Got unhandled msg: %s" % repr(m))
 
-    def call(self, service, body=None, timeout=0, auth_id=None, **kwargs):
-        f = Future()
+    def call(self, service, body=None,
+             timeout=0, auth_id=None, handler=None, **kwargs):
+        h = handler
+        if handler is None:
+            f = Future()
+            h = f.set
 
         if auth_id is None:
             auth_id = uuid.uuid1()
@@ -412,13 +416,14 @@ class MMDConnection(object):
         cc = MMDChannelCreate(service=service, body=body, timeout=timeout,
                               auth_id=auth_id, chan_type="call", **kwargs)
         with self._chans_lock:
-            self._chans[cc.chan_id] = _MMDChannel(handler=f.set, create_msg=cc)
+            self._chans[cc.chan_id] = _MMDChannel(handler=h, create_msg=cc)
 
         self.send_msg(cc)
-        r = f()
-        if isinstance(r, Exception):
-            raise r
-        return r
+        if handler is None:
+            r = f()
+            if isinstance(r, Exception):
+                raise r
+            return r
 
     def subscribe(self, handler, service, body, timeout=0, auth_id=None):
         if auth_id is None:
@@ -469,9 +474,11 @@ class MMDRemoteService(object):
     def __getitem__(self, name):
         return MMDRemoteService(mmd=self._mmd, path=self._path + [name])
 
-    def __call__(self, body=None, auth_id=None, timeout=0, **kwargs):
+    def __call__(self, body=None, handler=None,
+                 auth_id=None, timeout=0, **kwargs):
         return self._mmd.call(service=self._service,
                               body=_resolve_body(body, kwargs),
+                              handler=handler,
                               auth_id=auth_id,
                               timeout=timeout)
 
