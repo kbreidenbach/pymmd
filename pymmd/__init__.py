@@ -181,12 +181,12 @@ def decode_int(bs):
     return (v >> 1) ^ -(v & 1)
 
 def decode_double(bs):
-    v = struct.unpack("!d", str(bs[:8]))
+    v = struct.unpack("!d", str(bs[:8]))[0]
     del bs[:8]
     return v
 
 def decode_float(bs):
-    v = struct.unpack("!f", str(v[:4]))
+    v = struct.unpack("!f", str(v[:4]))[0]
     del bs[:4]
     return v
 
