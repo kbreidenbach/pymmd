@@ -80,6 +80,7 @@ class _MMDReplyable(object):
     """Adds methods such as .reply() and .close() to channel messages"""
     __slots__ = ('_con',)
     def send(self, body=None, **kwargs):
+        """Send a ChannelMessage (or ChannelClose if this is a call channel)"""
         if isinstance(self, MMDChannelCreate) and self.chan_type == "call":
             mk_msg = MMDChannelClose
         else:
@@ -91,6 +92,7 @@ class _MMDReplyable(object):
     __call__ = send
 
     def close(self, body=None, **kwargs):
+        """Close the associated channel."""
         self._con.send_msg(MMDChannelClose(chan_id = self.chan_id,
                                            body = _resolve_body(body, kwargs)))
 
@@ -339,6 +341,25 @@ def encode(v):
 _MMDChannel = namedtuple('_MMDChannel', ['handler', 'create_msg'])
 
 class MMDConnection(object):
+    """MMDConnection(host="localhost", post=9999, \
+thread_class=threading.Thread)
+
+Abstracts the connection to mmd. This class spawns a reader thread and
+is written to allow multiple channels to be in-flight at the same
+time.
+
+Example: calling echo2:
+  >>> c = pymmd.connect()
+  >>> c.echo2("Hello, World!")
+
+Example: subscribing to services.
+  >>> c = pymmd.connect()
+  >>> class ServicesHandler:
+  ...     def handle_message(self, msg):
+  ...         print "Got update from services: %s" % msg.body
+  ... sh = ServicesHandler()
+  c.services.subscribe(handler=sh)
+"""
     def __init__(self, host="localhost", port=9999,
                  thread_class=threading.Thread):
         self._host = host
@@ -405,6 +426,14 @@ class MMDConnection(object):
 
     def call(self, service, body=None,
              timeout=0, auth_id=None, handler=None, **kwargs):
+        """Call (as opposed to Subscribe) a service.
+
+If no handler is given the call is synchronous (for the calling thread),
+otherwise the handler should be a function/method that will be called
+when the result comes back.
+
+It might produce cleaner code to use 'c.myservice(myargs)' rather then
+'c.call("myservice", myargs)'"""
         h = handler
         if handler is None:
             f = Future()
@@ -426,6 +455,23 @@ class MMDConnection(object):
             return r
 
     def subscribe(self, handler, service, body, timeout=0, auth_id=None):
+        """Create a subscription channel.
+
+Handler should be an object that as the following (callback) methods:
+
+    def set_channel(self, ch):
+        '''Called with the channel object which can be used to send
+           messages (ch.send(msg) or ch.reply(msg) or ch(msg)) or
+           to close the channel (ch.close(msg))'''
+
+    def handle_message(self, msg):
+        '''Called whenever the other side sends a message'''
+
+    def handle_close(self, msg):
+        '''Called whenever the other side closes the channel'''
+
+It might produce cleaner code to use 'c.myservice.subscribe(myargs)'
+rather then 'c.subscribe("myservice", myargs)'"""
         if auth_id is None:
             auth_id = uuid.uuid1()
 
@@ -442,9 +488,18 @@ class MMDConnection(object):
         return cc
 
     def close(self):
+        """Close connection to MMD.
+
+Note this will destroy all open channels."""
         self._s.close()
 
     def listen(self, service, handler):
+        """Register as a service.
+
+Handler should be a function/method that will be called for each
+channel create or message or close object. Quite likely you want
+to the handler to be a subclass of MMDService which takes care of
+a bunch of stuff for you."""
         with self._svcs_lock:
             self._svcs[service] = handler
         self.serviceregistry(service)
@@ -492,6 +547,34 @@ class MMDRemoteService(object):
         return self._mmd.listen(service=self._service, handler=handler)
 
 class MMDService(object):
+    """A base class for service handlers.
+
+This base class makes it easier for you to write services. You can
+define the following methods:
+
+    def handle_call(self, msg):
+        '''This will be called for every CreateChannel calls that you're
+service receives. The return value from this function is sent back as the
+call response.'''
+
+    def handle_subscribe(self, msg):
+        '''This will be called for every CreateChannel subscribe that
+you're service receives.'''
+
+    def handle_message(self, msg):
+        '''This will be called for channel message you receive'''
+
+    def handle_close(self, msg):
+        '''This will be called whenever one of your channels is closed'''
+
+If you fail to create one of these methods and a message is sent that
+would have needed one of these, the offending channel is closed with
+an error message indicating that you're service doesn't support such.
+
+There is also an exception handler in place so that if your handle_*()
+method raises, the exception will be logged as well as channel being
+closed and the exception being encoded and sent with the channel close
+message."""
     def __init__(self):
         pass
 
