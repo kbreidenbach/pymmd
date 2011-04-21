@@ -1,3 +1,13 @@
+pymmd (0.2.1) UNRELEASED; urgency=low
+
+  [ Scott R. Parish ]
+  * encode empty array could have uninitialize 'n'
+  * decoded of doubles and floats were being returned as tuples
+
+  [ Scott R Parish ]
+
+ -- Scott R Parish <sparish@peak6.com>  Thu, 21 Apr 2011 13:33:25 -0500
+
 pymmd (0.2.0) UNRELEASED; urgency=low
 
   [ Scott Parish ]
