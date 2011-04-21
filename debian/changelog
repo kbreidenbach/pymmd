@@ -1,10 +1,28 @@
-pymmd (0.1.2) UNRELEASED; urgency=low
+pymmd (0.2.0) UNRELEASED; urgency=low
 
+  [ Scott Parish ]
   * _resolve_body(): allow body to be None
   * in addition to closing channel, log error if handler raises exception
   * don't need pymongo, no idea why it was being imported
 
- -- Scott Parish <sparish@peak6.com>  Fri, 15 Apr 2011 14:38:24 -0600
+  [ Scott R. Parish ]
+  * Support __call__ directly on channel
+  * better represenation of error codes then raw integers
+  * SERVICE_ERROR is probably a better error code for MMDService
+  * don't pass --prune to setup.py
+  * Allow subscription handler to have a set_channel() method
+  * ident nit
+  * Allow subscription handler to have a set_channel() method
+  * subscribe() was accidentally creating an unneeded Future
+  * Allow handler to be specified for calls, enabling asynchronous
+    calling
+  * Allow saying c.echo3.listen(handler) in addition to c.listen(echo3,
+    handler)
+  * Add a bunch of document string documentation
+
+  [ Scott R Parish ]
+
+ -- Scott R Parish <sparish@peak6.com>  Wed, 20 Apr 2011 19:42:41 -0500
 
 pymmd (0.1.1) UNRELEASED; urgency=low
 
