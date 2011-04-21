@@ -324,6 +324,7 @@ def encode_into(v, bs):
     elif hasattr(v, "__iter__"):
         bs.append("A")
         lbs = bytearray()
+        n = -1
         for n, e in enumerate(v):
             encode_into(e, lbs)
         encode_uint(n + 1, bs)
