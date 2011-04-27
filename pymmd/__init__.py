@@ -390,15 +390,16 @@ Example: subscribing to services.
         self._s.send(struct.pack("!I", len(bs)))
         self._s.send(bs)
 
+    def _recv_len(self, l):
+        bs = bytearray()
+        while len(bs) < l:
+            bs.extend(self._s.recv(l - len(bs)))
+        return bs
+
     def _recv_msg(self):
-        lbs = self._s.recv(4)
-        l = struct.unpack("!I", lbs)[0]
-        try:
-            bs = bytearray(l)
-            self._s.recv_into(bs, l)
-        except TypeError: # support for python 2.6
-            bs = bytearray(self._s.recv(l))
-        m = decode(bs)
+        lbs = self._recv_len(4)
+        l = struct.unpack("!I", str(lbs))[0]
+        m = decode(self._recv_len(l))
         m._con = self
         return m
 
