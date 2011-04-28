@@ -77,7 +77,7 @@ class MMDError(Exception, _MMDEncodable):
 
     def encode_into(self, bs):
         bs.append("E")
-        encode_int(self.code, bs)
+        encode_int(self.code.code, bs)
         encode_into(self.msg, bs)
 
 class _MMDReplyable(object):
