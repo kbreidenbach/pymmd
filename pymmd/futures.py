@@ -19,7 +19,6 @@ class Future(object):
         while self.__done==0:
             self.__C.wait()
         self.__C.release()
-        # We deepcopy __result to prevent accidental tampering with it.
         return self.__result
 
     def set(self, v):
