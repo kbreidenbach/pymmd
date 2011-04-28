@@ -302,6 +302,7 @@ mmd_code_and_encoders = {
     bool: ("", encode_bool),
     NoneType: ("N", None),
     str: ("S", encode_str),
+    unicode: ("S", lambda u, bs: encode_str(str(u), bs)),
     uuid.UUID: ("U", encode_uuid),
     datetime: ("#", encode_datetime),
     bytearray: ("b", encode_bytes),
