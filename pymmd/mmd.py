@@ -43,10 +43,14 @@ class MMDErrorCode(object):
         return 'MMDErrorCode(%d, "%s")' % (self.code, self.name)
 
 errors = [
+    MMDErrorCode(0, "UNKNOWN"),
     MMDErrorCode(1, "SERVICE_NOT_FOUND"),
+    MMDErrorCode(2, "IMPROPER_RESPONSE_TYPE"),
+    MMDErrorCode(3, "BROKER_CONNECTION_CLOSED"),
     MMDErrorCode(4, "SERVICE_ERROR"),
     MMDErrorCode(5, "UNEXPECTED_REMOTE_CHANNEL_CLOSE"),
     MMDErrorCode(6, "INVALID_REQUEST"),
+    MMDErrorCode(7, "AUTHENTICATION_ERROR"),
     MMDErrorCode(8, "CHANNEL_ADMIN_CLOSED"),
     MMDErrorCode(9, "INVALID_CHANNEL"),
 ]
