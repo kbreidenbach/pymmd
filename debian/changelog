@@ -1,3 +1,13 @@
+pymmd (0.2.3) UNRELEASED; urgency=low
+
+  [ Scott R. Parish ]
+  * Add missing error codes
+  * MMDError.encode_into(): was trying to encode code incorrectly
+
+  [ Scott R Parish ]
+
+ -- Scott R Parish <sparish@peak6.com>  Thu, 28 Apr 2011 13:56:54 -0500
+
 pymmd (0.2.2) UNRELEASED; urgency=low
 
   [ Scott R. Parish ]
