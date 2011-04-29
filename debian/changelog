@@ -1,3 +1,13 @@
+pymmd (0.2.4) UNRELEASED; urgency=low
+
+  [ Scott R. Parish ]
+  * if recv() returns 0, don't go into infinate loop
+  * modify debian packaging to be more like pymongos
+
+  [ Scott Parish ]
+
+ -- Scott Parish <sparish@peak6.com>  Fri, 29 Apr 2011 16:00:49 -0500
+
 pymmd (0.2.3) UNRELEASED; urgency=low
 
   [ Scott R. Parish ]
