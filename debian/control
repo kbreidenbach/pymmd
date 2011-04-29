@@ -8,7 +8,6 @@ Standards-Version: 3.9.1
 
 Package: pymmd
 Architecture: any
-XB-Python-Version: ${python:Versions}
 Depends: ${misc:Depends}, ${python:Depends}
 Description: A pure python mmd driver
  A pure python mmd driver
