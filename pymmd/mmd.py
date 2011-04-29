@@ -398,7 +398,9 @@ Example: subscribing to services.
     def _recv_len(self, l):
         bs = bytearray()
         while len(bs) < l:
-            bs.extend(self._s.recv(l - len(bs)))
+            rbs = self._s.recv(l - len(bs))
+            assert len(rbs) > 0
+            bs.extend(rbs)
         return bs
 
     def _recv_msg(self):
