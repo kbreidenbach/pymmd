@@ -17,6 +17,6 @@ class Echo3(pymmd.MMDService):
             msg.reply(["pong2", msg.body])
 
     def handle_close(self, msg):
-        print "handle_message(%s)" % repr(msg)
+        print "handle_close(%s)" % repr(msg)
 
 echo3 = Echo3()

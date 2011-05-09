@@ -51,6 +51,6 @@ You should see the following on the service side:
 
    handle_subscribe(MMDChannelCreate(chan_id=UUID('c5f1b7c0-5fde-11e0-9c3e-00219b38831e'), chan_type='subscribe', service='echo3', body='Test123', auth_id=UUID('c5f187a0-5fde-11e0-9c3e-00219b38831e'), timeout=0))
    handle_message(MMDChannelMessage(chan_id=UUID('c5f1b7c0-5fde-11e0-9c3e-00219b38831e'), body='Ping'))
-   handle_message(MMDChannelClose(chan_id=UUID('c5f1b7c0-5fde-11e0-9c3e-00219b38831e'), body='Goodbye'))
+   handle_close(MMDChannelClose(chan_id=UUID('c5f1b7c0-5fde-11e0-9c3e-00219b38831e'), body='Goodbye'))
 
 
