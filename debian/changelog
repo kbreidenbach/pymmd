@@ -1,3 +1,13 @@
+pymmd (0.2.5) UNRELEASED; urgency=low
+
+  [ Chukwuma Akpuokwe ]
+  * add __init__.py for example
+  * Fix wrong comment and assoc. README
+
+  [ chukwuma ]
+
+ -- chukwuma <chukwuma@peak6.com>  Mon, 09 May 2011 13:18:51 -0500
+
 pymmd (0.2.4) UNRELEASED; urgency=low
 
   [ Scott R. Parish ]
