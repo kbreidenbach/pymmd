@@ -391,8 +391,7 @@ Example: subscribing to services.
         if isinstance(m, MMDChannelClose):
             with self._chans_lock:
                 del self._chans[m.chan_id]
-        bs = bytearray()
-        bs.extend('\x00\x00\x00\x00')
+        bs = bytearray(4)
         m.encode_into(bs)
         bs[0:4] = struct.pack("!I", len(bs) - 4)
         self._s.send(bs)
