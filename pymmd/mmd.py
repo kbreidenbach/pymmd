@@ -391,8 +391,10 @@ Example: subscribing to services.
         if isinstance(m, MMDChannelClose):
             with self._chans_lock:
                 del self._chans[m.chan_id]
-        bs = m.encode()
-        self._s.send(struct.pack("!I", len(bs)))
+        bs = bytearray()
+        bs.extend('\x00\x00\x00\x00')
+        m.encode_into(bs)
+        bs[0:4] = struct.pack("!I", len(bs) - 4)
         self._s.send(bs)
 
     def _recv_len(self, l):
