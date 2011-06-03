@@ -205,6 +205,11 @@ def decode_str(bs):
     del bs[:l]
     return str(r)
 
+def decode_byte(bs):
+    r = bs[:1]
+    del bs[:1]
+    return r
+
 def decode_bytes(bs):
     l = decode_uint(bs)
     r = bs[:l]
@@ -247,6 +252,7 @@ mmd_decoders = {
     "F": lambda bs: False,
     "N": lambda bs: None,
     "S": decode_str,
+    "B": decode_byte,
     "b": decode_bytes,
     "U": decode_uuid,
     "#": decode_datetime,
