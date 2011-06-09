@@ -71,6 +71,8 @@ class MMDError(Exception, _MMDEncodable):
     def __repr__(self):
         return "MMDError(code=%s, msg=%s)" % (repr(self.code), repr(self.msg))
 
+    __str__ = __repr__
+
     @staticmethod
     def decode(bs):
         return MMDError(code=decode_int(bs), msg=decode(bs))
