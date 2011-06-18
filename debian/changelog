@@ -1,3 +1,26 @@
+pymmd (0.2.6) UNRELEASED; urgency=low
+
+  [ David Budworth ]
+  * added dday examples
+  * added example service
+
+  [ Scott R. Parish ]
+  * send_msg() wasn't threadsafe
+  * send_msg(): cleaner way to startout with 4 extra bytes
+
+  [ David Budworth ]
+  * Changed call examples to be more idiomatic python
+  * changed to normal 9998/9999 ports
+  * added support for Byte "B" to mmd decode
+  * added login example
+
+  [ Scott R. Parish ]
+  * MMDError: need to explicitly set __str__ as Exception has it's own
+
+  [ Scott R Parish ]
+
+ -- Scott R Parish <sparish@peak6.com>  Sat, 18 Jun 2011 15:59:56 -0500
+
 pymmd (0.2.5) UNRELEASED; urgency=low
 
   [ Chukwuma Akpuokwe ]
