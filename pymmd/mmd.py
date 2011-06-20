@@ -1,8 +1,9 @@
-import errno, logging, socket, struct, sys, time, threading, traceback, uuid
+import errno, logging, math, socket, struct, sys, time, threading, traceback
+import uuid
 from datetime import datetime
 from collections import namedtuple
 from types import NoneType
-from futures import Future
+import futures
 
 wire_version = (1,0)
 
@@ -81,6 +82,125 @@ class MMDError(Exception, _MMDEncodable):
         bs.append("E")
         encode_int(self.code.code, bs)
         encode_into(self.msg, bs)
+
+class Security(object):
+    pass
+
+    @staticmethod
+    def decode_key(key):
+        assert key[1] == ":"
+        if key[0] == "S":
+            return Stock(str(key[2:]))
+        elif key[0] == "F":
+            return Future(str(key[2:]))
+        elif key[0] == "O":
+            parts = str(key[2:]).split(":")
+            yy = int(parts[1][:2])
+            mm = int(parts[1][2:4])
+            dd = int(parts[1][4:])
+            yyyy = datetime.now().year // 100 * 100 + yy
+            return Option(parts[0], yyyy, mm, dd,
+                          float(parts[2]) / 1000, parts[3])
+        else:
+            raise MMDDecodeError("Unknown SecurityKey type: '%s'" % c)
+
+    @staticmethod
+    def decode_id(bs):
+        typ_sym_sz = bs.pop(0)
+        typ = typ_sym_sz >> 5
+        sym_sz = typ_sym_sz & 0x1f
+        if typ == 0:
+            sym = Stock(str(bs[:sym_sz]))
+            del bs[:sym_sz]
+            return sym
+        elif typ == 1:
+            month_day = bs.pop(0)
+            day_cp_year = bs.pop(0)
+            year = datetime.now().year // 100 * 100 + (day_cp_year & 0x3f)
+            month = month_day >> 4
+            day = (month_day & 0xf) << 1 | day_cp_year >> 7
+            security = str(bs[:sym_sz])
+            cp = "C" if ((day_cp_year >> 6) & 0x1) == 0 else "P"
+            del bs[:sym_sz]
+            strike = struct.unpack("!I", str(bs[:4]))[0] / 1000.0
+            del bs[:4]
+            return Option(security, year, month, day, strike, cp)
+        elif typ == 2:
+            fut = Future(str(bs[:sym_sz]))
+            del bs[:sym_sz]
+            return fut
+        else:
+            raise MMDDecodeError("Unknown SecurityId type: %d" % typ)
+
+class Stock(Security):
+    __slots__ = ('symbol',)
+    def __init__(self, symbol):
+        self.symbol = symbol
+
+    def __repr__(self):
+        return "Stock(symbol='%s')" % self.symbol
+
+    def __str__(self):
+        return "S:" + self.symbol
+
+    def encode_into(self, bs):
+        bs.append("$")
+        # should be ORed with 0<<5, but this has no effect so we leave
+        # it out for performance reasons
+        bs.append(len(self.symbol))
+        bs.extend(self.symbol)
+
+class Option(Security):
+    __slots__ = ('security', 'year', 'month', 'day', 'strike', 'call_pus')
+    def __init__(self, security, year, month, day, strike, call_put):
+        self.security = security
+        self.year = year
+        self.month = month
+        self.day = day
+        self.strike = strike
+        self.call_put = call_put
+
+    def __repr__(self):
+        return ("Option(security='%s', year=%d, month=%d, day=%d, "
+                "strike=%.3f, call_put='%s')" %
+                (self.security, self.year, self.month, self.day,
+                 self.strike, self.call_put))
+
+    def __str__(self):
+        return ("O:%s:%.2d%.2d%.2d:%d:%s" %
+                (self.security, self.year % 100, self.month, self.day,
+                 self.shifted_strike(), self.call_put))
+
+    def shifted_strike(self):
+        return int(math.ceil(self.strike * 1000.0))
+
+    def encode_into(self, bs):
+        bs.append("$")
+        # 32 comes from 1<<5 where 1 is for option
+        bs.append(32 | len(self.security))
+        bs.append((self.month << 4) | (self.day >> 1))
+        bs.append(((self.day & 0x01) << 7) |
+                  ((0 if self.call_put in ('C', 'c') else 1) << 6) |
+                  (self.year % 100) & 0x3f)
+        bs.extend(self.security)
+        bs.extend(struct.pack("!I", self.shifted_strike()))
+
+class Future(Security):
+    __slots__ = ('symbol',)
+    def __init__(self, symbol):
+        self.symbol = symbol
+
+    def __repr__(self):
+        return "Future(symbol='%s')" % self.symbol
+
+    def __str__(self):
+        return "F:%s%s%s" % self.symbol
+
+    def encode_into(self, bs):
+        bs.append("$")
+        # 64 comes from 2<<5 where 1 is for option
+        bs.append(64 | len(self.symbol))
+        bs.extend(self.symbol)
 
 class _MMDReplyable(object):
     """Adds methods such as .reply() and .close() to channel messages"""
@@ -260,6 +380,7 @@ mmd_decoders = {
     "#": decode_datetime,
     "m": decode_map,
     "A": decode_array,
+    "$": Security.decode_id,
     "E": MMDError.decode,
     "C": MMDChannelCreate.decode,
     "X": MMDChannelClose.decode,
@@ -454,7 +575,7 @@ It might produce cleaner code to use 'c.myservice(myargs)' rather then
 'c.call("myservice", myargs)'"""
         h = handler
         if handler is None:
-            f = Future()
+            f = futures.Future()
             h = f.set
 
         if auth_id is None:
