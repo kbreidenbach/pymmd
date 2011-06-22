@@ -512,7 +512,9 @@ Example: subscribing to services.
         self._recv_thread.start()
 
     def _connect(self):
-        self._s = socket.create_connection((self._host, self._port))
+        self._s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self._s.connect((self._host, self._port))
         self._s.send(struct.pack("!I", len(wire_version)))
         self._s.send(bytearray(wire_version))
 
