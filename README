@@ -30,7 +30,7 @@ python windows to run the example. In the first window start the service:
    >>> import pymmd
    >>> import echo3
    >>> c = pymmd.connect()
-   >>> c.listen(service="echo3", handler=echo3.echo3)
+   >>> c.register(service="echo3", handler=echo3.echo3)
 
 And in the client window:
 

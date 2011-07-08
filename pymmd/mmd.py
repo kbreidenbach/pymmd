@@ -634,7 +634,7 @@ rather then 'c.subscribe("myservice", myargs)'"""
 Note this will destroy all open channels."""
         self._s.close()
 
-    def listen(self, service, handler):
+    def register(self, service, handler):
         """Register as a service.
 
 Handler should be a function/method that will be called for each
@@ -644,6 +644,9 @@ a bunch of stuff for you."""
         with self._svcs_lock:
             self._svcs[service] = handler
         self.serviceregistry(service)
+
+    # 'listen' is deprecated, please use 'register' instead
+    listen = register
 
     def __getattr__(self, name):
         return MMDRemoteService(mmd=self, path=[name])
@@ -684,8 +687,11 @@ class MMDRemoteService(object):
                                    auth_id=auth_id,
                                    timeout=timeout)
 
-    def listen(self, handler):
-        return self._mmd.listen(service=self._service, handler=handler)
+    def register(self, handler):
+        return self._mmd.register(service=self._service, handler=handler)
+
+    # 'listen' is deprecated, please use 'register' instead
+    listen = register
 
 class MMDService(object):
     """A base class for service handlers.
