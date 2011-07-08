@@ -645,6 +645,12 @@ a bunch of stuff for you."""
             self._svcs[service] = handler
         self.serviceregistry(service)
 
+    def unregister(self, service):
+        """Unregister a service."""
+        with self._svcs_lock:
+            del self._svcs[service]
+        self.serviceregistry({"unregister": service})
+
     # 'listen' is deprecated, please use 'register' instead
     listen = register
 
@@ -689,6 +695,9 @@ class MMDRemoteService(object):
 
     def register(self, handler):
         return self._mmd.register(service=self._service, handler=handler)
+
+    def unregister(self):
+        return self._mmd.unregister(service=self._service)
 
     # 'listen' is deprecated, please use 'register' instead
     listen = register
