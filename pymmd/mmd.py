@@ -108,19 +108,19 @@ class Security(object):
     def decode_id(bs):
         typ_sym_sz = bs.pop(0)
         typ = typ_sym_sz >> 5
-        sym_sz = typ_sym_sz & 0x1f
+        sym_sz = typ_sym_sz & 0xf
         if typ == 0:
             sym = Stock(str(bs[:sym_sz]))
             del bs[:sym_sz]
             return sym
         elif typ == 1:
+            cp = "C" if ((typ_sym_sz >> 4) & 0x1) == 0 else "P"
             month_day = bs.pop(0)
-            day_cp_year = bs.pop(0)
-            year = datetime.now().year // 100 * 100 + (day_cp_year & 0x3f)
+            day_year = bs.pop(0)
+            year = 1970 + day_year & 0x7f
             month = month_day >> 4
             day = (month_day & 0xf) << 1 | day_cp_year >> 7
             security = str(bs[:sym_sz])
-            cp = "C" if ((day_cp_year >> 6) & 0x1) == 0 else "P"
             del bs[:sym_sz]
             strike = struct.unpack("!I", str(bs[:4]))[0] / 1000.0
             del bs[:4]
@@ -177,11 +177,12 @@ class Option(Security):
     def encode_into(self, bs):
         bs.append("$")
         # 32 comes from 1<<5 where 1 is for option
-        bs.append(32 | len(self.security))
+        bs.append(32 |
+                  (0 if self.call_put in ('C', 'c') else 1) << 4 |
+                  len(self.security))
         bs.append((self.month << 4) | (self.day >> 1))
         bs.append(((self.day & 0x01) << 7) |
-                  ((0 if self.call_put in ('C', 'c') else 1) << 6) |
-                  (self.year % 100) & 0x3f)
+                  (self.year - 1970) & 0x7f)
         bs.extend(self.security)
         bs.extend(struct.pack("!I", self.shifted_strike()))
 
