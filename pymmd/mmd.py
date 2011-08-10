@@ -480,9 +480,64 @@ class MMDConnection(object):
     """MMDConnection(host="localhost", post=9999, \
 thread_class=threading.Thread)
 
+Abstracts the connection to mmd. This class spawns 2 reader threads and
+is written to allow multiple channels to be in-flight at the same
+time. One reader thread handles service requests, while the other thread
+handles client requests.
+
+Example: calling echo2:
+  >>> c = pymmd.connect()
+  >>> c.echo2("Hello, World!")
+
+Example: subscribing to services.
+  >>> c = pymmd.connect()
+  >>> class ServicesHandler:
+  ...     def handle_message(self, msg):
+  ...         print "Got update from services: %s" % msg.body
+  ... sh = ServicesHandler()
+  c.services.subscribe(handler=sh)
+"""
+    def __init__(self, host="localhost", port=9999,
+                 thread_class=threading.Thread):
+        self._s = MMDRealConnection(host, port, thread_class)
+        self._c = MMDRealConnection(host, port, thread_class)
+
+    def call(self, service, body=None,
+             timeout=0, auth_id=None, handler=None, **kwargs):
+        return self._c.call(service, body, timeout, auth_id, handler, **kwargs)
+
+    def subscribe(self, handler, service, body, timeout=0, auth_id=None):
+        return self._c.subscribe(self, handler, service, body, timeout, auth_id)
+
+    def close(self):
+        self._s.close()
+        self._c.close()
+
+    def register(self, service, handler):
+        return self._s.register(service, handler)
+
+    def unregister(self, service):
+        return self._s.unregister(service)
+
+    # 'listen' is deprecated, please use 'register' instead
+    listen = register
+
+    def __getattr__(self, name):
+        return MMDRemoteService(service=self._s, client=self._c, path=[name])
+
+    def __getitem__(self, key):
+        return MMDRemoteService(service=self._s, client=self._c, path=[key])
+
+class MMDRealConnection(object):
+    """MMDRealConnection(host="localhost", post=9999, \
+thread_class=threading.Thread)
+
 Abstracts the connection to mmd. This class spawns a reader thread and
 is written to allow multiple channels to be in-flight at the same
 time.
+
+Do not use this class directly. Use MMDConnection instead, unless you can
+guarantee that services live remotely from clients or vice versa.
 
 Example: calling echo2:
   >>> c = pymmd.connect()
@@ -652,22 +707,20 @@ a bunch of stuff for you."""
             del self._svcs[service]
         self.serviceregistry({"unregister": service})
 
-    # 'listen' is deprecated, please use 'register' instead
-    listen = register
-
     def __getattr__(self, name):
-        return MMDRemoteService(mmd=self, path=[name])
+        return MMDRemoteService(service=self, client=self, path=[name])
 
     def __getitem__(self, key):
-        return MMDRemoteService(mmd=self, path=[key])
+        return MMDRemoteService(service=self, client=self, path=[key])
 
 connect = MMDConnection
 
 class MMDRemoteService(object):
-    __slots__ = ("_mmd", "_path")
+    __slots__ = ("_s", "_c", "_path")
 
-    def __init__(self, mmd, path=None):
-        self._mmd = mmd
+    def __init__(self, service, client, path=None):
+        self._s = service
+        self._c = client
         self._path = path if path else []
 
     @property
@@ -675,30 +728,32 @@ class MMDRemoteService(object):
         return ".".join(self._path)
 
     def __getattr__(self, name):
-        return MMDRemoteService(mmd=self._mmd, path=self._path + [name])
+        return MMDRemoteService(service=self._s, client=self._c,
+                                path=self._path + [name])
 
     def __getitem__(self, name):
-        return MMDRemoteService(mmd=self._mmd, path=self._path + [name])
+        return MMDRemoteService(service=self._s, client=self._c,
+                                path=self._path + [name])
 
     def __call__(self, body=None, handler=None,
                  auth_id=None, timeout=0, **kwargs):
-        return self._mmd.call(service=self._service,
-                              body=_resolve_body(body, kwargs),
-                              handler=handler,
-                              auth_id=auth_id,
-                              timeout=timeout)
+        return self._c.call(service=self._service,
+                            body=_resolve_body(body, kwargs),
+                            handler=handler,
+                            auth_id=auth_id,
+                            timeout=timeout)
 
     def subscribe(self, handler, body=None, auth_id=None, timeout=0, **kwargs):
-        return self._mmd.subscribe(handler, service=self._service,
-                                   body=_resolve_body(body, kwargs),
-                                   auth_id=auth_id,
-                                   timeout=timeout)
+        return self._c.subscribe(handler, service=self._service,
+                                 body=_resolve_body(body, kwargs),
+                                 auth_id=auth_id,
+                                 timeout=timeout)
 
     def register(self, handler):
-        return self._mmd.register(service=self._service, handler=handler)
+        return self._s.register(service=self._service, handler=handler)
 
     def unregister(self):
-        return self._mmd.unregister(service=self._service)
+        return self._s.unregister(service=self._service)
 
     # 'listen' is deprecated, please use 'register' instead
     listen = register
