@@ -254,7 +254,7 @@ class MMDChannelCreate(_MMDReplyable, _MMDEncodable, _SlotsRepr):
     def encode_into(self, bs):
         bs.append("C")
         bs.extend(self.chan_id.bytes)
-        bs.append({"call": "C", "subcribe": "S"}[self.chan_type])
+        bs.append({"call": "C", "subscribe": "S"}[self.chan_type])
         encode_str(self.service, bs)
         encode_uint(self.timeout, bs)
         bs.extend(self.auth_id.bytes)
@@ -673,7 +673,7 @@ rather then 'c.subscribe("myservice", myargs)'"""
             auth_id = uuid.uuid1()
 
         cc = MMDChannelCreate(service=service, body=body, timeout=timeout,
-                              auth_id=auth_id, chan_type="subcribe")
+                              auth_id=auth_id, chan_type="subscribe")
         with self._chans_lock:
             self._chans[cc.chan_id] = \
                 _MMDChannel(handler=handler, create_msg=cc)
