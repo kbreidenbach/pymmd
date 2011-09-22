@@ -507,7 +507,7 @@ Example: subscribing to services.
         return self._c.call(service, body, timeout, auth_id, handler, **kwargs)
 
     def subscribe(self, handler, service, body, timeout=0, auth_id=None):
-        return self._c.subscribe(self, handler, service, body, timeout, auth_id)
+        return self._c.subscribe(handler, service, body, timeout, auth_id)
 
     def close(self):
         self._s.close()
