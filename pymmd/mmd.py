@@ -119,7 +119,7 @@ class Security(object):
             day_year = bs.pop(0)
             year = 1970 + day_year & 0x7f
             month = month_day >> 4
-            day = (month_day & 0xf) << 1 | day_cp_year >> 7
+            day = (month_day & 0xf) << 1 | day_year >> 7
             security = str(bs[:sym_sz])
             del bs[:sym_sz]
             strike = struct.unpack("!I", str(bs[:4]))[0] / 1000.0
@@ -195,7 +195,7 @@ class Future(Security):
         return "Future(symbol='%s')" % self.symbol
 
     def __str__(self):
-        return "F:%s%s%s" % self.symbol
+        return "F:%s" % self.symbol
 
     def encode_into(self, bs):
         bs.append("$")
