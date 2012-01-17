@@ -393,8 +393,8 @@ def decode(bs):
     if typ in mmd_decoders:
         return mmd_decoders[typ](bs)
     else:
-        raise MMDDecodeError("Don't know how to decode type '%s' (%d)" %
-                             (repr(typ), ord(typ)))
+        raise MMDDecodeError("Don't know how to decode type '%s' (%d): %s" %
+                             (repr(typ), ord(typ), repr(bs)))
 
 def encode_uint(v, bs):
     while v > 0x7f:
