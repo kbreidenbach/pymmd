@@ -519,6 +519,9 @@ Example: subscribing to services.
     def unregister(self, service):
         return self._s.unregister(service)
 
+    def send_msg(self, msg):
+        return self._c.send_msg(self, msg)
+
     # 'listen' is deprecated, please use 'register' instead
     listen = register
 
