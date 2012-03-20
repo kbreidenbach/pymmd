@@ -1,4 +1,5 @@
 import errno, logging, math, socket, struct, sys, time, threading, traceback
+from cStringIO import StringIO
 import uuid
 from datetime import datetime
 from collections import namedtuple
@@ -110,28 +111,24 @@ class Security(object):
 
     @staticmethod
     def decode_id(bs):
-        typ_sym_sz = bs.pop(0)
+        typ_sym_sz = ord(bs.read(1))
         typ = typ_sym_sz >> 5
         sym_sz = typ_sym_sz & 0xf
         if typ == 0:
-            sym = Stock(str(bs[:sym_sz]))
-            del bs[:sym_sz]
+            sym = Stock(bs.read(sym_sz))
             return sym
         elif typ == 1:
             cp = "C" if ((typ_sym_sz >> 4) & 0x1) == 0 else "P"
-            month_day = bs.pop(0)
-            day_year = bs.pop(0)
+            month_day = ord(bs.read(1))
+            day_year = ord(bs.read(1))
             year = 1970 + day_year & 0x7f
             month = month_day >> 4
             day = (month_day & 0xf) << 1 | day_year >> 7
-            security = str(bs[:sym_sz])
-            del bs[:sym_sz]
-            strike = struct.unpack("!I", str(bs[:4]))[0] / 1000.0
-            del bs[:4]
+            security = bs.read(sym_sz)
+            strike = struct.unpack("!I", bs.read(4))[0] / 1000.0
             return Option(security, year, month, day, strike, cp)
         elif typ == 2:
-            fut = Future(str(bs[:sym_sz]))
-            del bs[:sym_sz]
+            fut = Future(bs.read(sym_sz))
             return fut
         else:
             raise MMDDecodeError("Unknown SecurityId type: %d" % typ)
@@ -249,7 +246,8 @@ class MMDChannelCreate(_MMDReplyable, _MMDEncodable, _SlotsRepr):
     def decode(bs):
         return MMDChannelCreate(chan_id = decode_uuid(bs),
                                 chan_type =
-                                {"C": "call", "S": "subscribe"}[chr(bs.pop(0))],
+                                {"C": "call",
+                                 "S": "subscribe"}[bs.read(1)],
                                 service=decode_str(bs),
                                 timeout=decode_uint(bs),
                                 auth_id=decode_uuid(bs),
@@ -298,12 +296,12 @@ class MMDChannelClose(_MMDEncodable, _MMDReplyable, _SlotsRepr):
 
 def decode_uint(bs):
     v = 0
-    b = bs.pop(0)
+    b = ord(bs.read(1))
     shift = 0
     while b & 0x80 != 0:
         v |= ((b & 0x7f) << shift)
         shift += 7
-        b = bs.pop(0)
+        b = ord(bs.read(1))
     v |= ((b & 0x7f) << shift)
     return v
 
@@ -313,15 +311,11 @@ def decode_int(bs):
 
 u_szs = {1: "!B", 2: "!H", 4: "!I", 8: "!Q"}
 def decode_int_u(bs, n):
-    v = bs[:n]
-    del bs[:n]
-    return struct.unpack(u_szs[n], str(v))[0]
+    return struct.unpack(u_szs[n], bs.read(n))[0]
 
 s_szs = {1: "!b", 2: "!h", 4: "!i", 8: "!q"}
 def decode_int_s(bs, n):
-    v = bs[:n]
-    del bs[:n]
-    return struct.unpack(s_szs[n], str(v))[0]
+    return struct.unpack(s_szs[n], bs.read(n))[0]
 
 def decode_int_u1(bs): return decode_int_u(bs, 1)
 def decode_int_u2(bs): return decode_int_u(bs, 2)
@@ -334,48 +328,28 @@ def decode_int_s4(bs): return decode_int_s(bs, 4)
 def decode_int_s8(bs): return decode_int_s(bs, 8)
 
 def decode_double(bs):
-    v = struct.unpack("!d", str(bs[:8]))[0]
-    del bs[:8]
-    return v
+    return struct.unpack("!d", bs.read(8))[0]
 
 def decode_float(bs):
-    v = struct.unpack("!f", str(v[:4]))[0]
-    del bs[:4]
-    return v
+    return struct.unpack("!f", bs.read(4))[0]
 
 def decode_uuid(bs):
-    u = uuid.UUID(bytes=str(bs[:16]))
-    del bs[:16]
-    return u
+    return uuid.UUID(bytes=(bs.read(16)))
 
 def decode_str(bs):
-    l = decode_uint(bs)
-    r = bs[:l]
-    del bs[:l]
-    return str(r)
+    return bs.read(decode_uint(bs))
 
 def decode_fast_str(bs):
-    l = decode(bs)
-    r = bs[:l]
-    del bs[:l]
-    return str(r)
+    return bs.read(decode(bs))
 
 def decode_byte(bs):
-    r = bs[:1]
-    del bs[:1]
-    return r
+    return bs.read(1)
 
 def decode_bytes(bs):
-    l = decode_uint(bs)
-    r = bs[:l]
-    del bs[:l]
-    return r
+    return bytearray(bs.read(decode_uint(bs)))
 
 def decode_fast_bytes(bs):
-    l = decode(bs)
-    r = bs[:l]
-    del bs[:l]
-    return r
+    return bytearray(bs.read(decode(bs)))
 
 us_per_s = int(1e6)
 def decode_datetime(bs):
@@ -462,7 +436,7 @@ mmd_decoders = {
     }
 
 def decode(bs):
-    typ = chr(bs.pop(0))
+    typ = bs.read(1)
     if typ in mmd_decoders:
         return mmd_decoders[typ](bs)
     else:
@@ -670,7 +644,8 @@ Example: subscribing to services.
     def _recv_msg(self):
         lbs = self._recv_len(4)
         l = struct.unpack("!I", str(lbs))[0]
-        m = decode(self._recv_len(l))
+        bs = self._recv_len(l)
+        m = decode(StringIO(bs))
         m._con = self
         return m
 
