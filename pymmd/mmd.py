@@ -78,6 +78,10 @@ class MMDError(Exception, _MMDEncodable):
     def decode(bs):
         return MMDError(code=decode_int(bs), msg=decode(bs))
 
+    @staticmethod
+    def decode_fast(bs):
+        return MMDError(code=decode(bs), msg=decode(bs))
+
     def encode_into(self, bs):
         bs.append("E")
         encode_int(self.code.code, bs)
@@ -307,6 +311,28 @@ def decode_int(bs):
     v = decode_uint(bs)
     return (v >> 1) ^ -(v & 1)
 
+u_szs = {1: "!B", 2: "!H", 4: "!I", 8: "!Q"}
+def decode_int_u(bs, n):
+    v = bs[:n]
+    del bs[:n]
+    return struct.unpack(u_szs[n], str(v))[0]
+
+s_szs = {1: "!b", 2: "!h", 4: "!i", 8: "!q"}
+def decode_int_s(bs, n):
+    v = bs[:n]
+    del bs[:n]
+    return struct.unpack(s_szs[n], str(v))[0]
+
+def decode_int_u1(bs): return decode_int_u(bs, 1)
+def decode_int_u2(bs): return decode_int_u(bs, 2)
+def decode_int_u4(bs): return decode_int_u(bs, 4)
+def decode_int_u8(bs): return decode_int_u(bs, 8)
+
+def decode_int_s1(bs): return decode_int_s(bs, 1)
+def decode_int_s2(bs): return decode_int_s(bs, 2)
+def decode_int_s4(bs): return decode_int_s(bs, 4)
+def decode_int_s8(bs): return decode_int_s(bs, 8)
+
 def decode_double(bs):
     v = struct.unpack("!d", str(bs[:8]))[0]
     del bs[:8]
@@ -328,6 +354,12 @@ def decode_str(bs):
     del bs[:l]
     return str(r)
 
+def decode_fast_str(bs):
+    l = decode(bs)
+    r = bs[:l]
+    del bs[:l]
+    return str(r)
+
 def decode_byte(bs):
     r = bs[:1]
     del bs[:1]
@@ -339,9 +371,20 @@ def decode_bytes(bs):
     del bs[:l]
     return r
 
+def decode_fast_bytes(bs):
+    l = decode(bs)
+    r = bs[:l]
+    del bs[:l]
+    return r
+
 us_per_s = int(1e6)
 def decode_datetime(bs):
     ts_us = decode_int(bs)
+    dt = datetime.fromtimestamp(ts_us // us_per_s)
+    return dt.replace(microsecond=ts_us % us_per_s)
+
+def decode_fast_datetime(bs):
+    ts_us = decode_int_s(bs, 8)
     dt = datetime.fromtimestamp(ts_us // us_per_s)
     return dt.replace(microsecond=ts_us % us_per_s)
 
@@ -353,9 +396,23 @@ def decode_map(bs):
         d[k] = decode(bs)
     return d
 
+def decode_fast_map(bs):
+    d = {}
+    for n in range(decode(bs)):
+        k = decode(bs)
+        d[k] = decode(bs)
+    return d
+
 def decode_array(bs):
     r = []
     for n in range(decode_uint(bs)):
+        r.append(decode(bs))
+    return r
+
+def decode_fast_array(bs):
+    sz = decode(bs)
+    r = []
+    for n in range(sz):
         r.append(decode(bs))
     return r
 
@@ -365,6 +422,16 @@ def decode_channel_close(bs):
             "body": decode(bs)}
 
 mmd_decoders = {
+    "\x00": lambda bs: 0,
+    "\x01": decode_int_s1,
+    "\x02": decode_int_s2,
+    "\x04": decode_int_s4,
+    "\x08": decode_int_s8,
+    "\x10": lambda bs: 0,
+    "\x11": decode_int_u1,
+    "\x12": decode_int_u2,
+    "\x14": decode_int_u4,
+    "\x18": decode_int_u8,
     "L": decode_int,
     "l": decode_uint,
     "I": decode_int,
@@ -386,6 +453,12 @@ mmd_decoders = {
     "C": MMDChannelCreate.decode,
     "X": MMDChannelClose.decode,
     "M": MMDChannelMessage.decode,
+    "r": decode_fast_map,
+    "a": decode_fast_array,
+    "s": decode_fast_str,
+    "e": MMDError.decode_fast,
+    "q": decode_fast_bytes,
+    "z": decode_fast_datetime,
     }
 
 def decode(bs):
