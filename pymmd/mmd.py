@@ -175,9 +175,9 @@ class Option(Security):
                  self.strike, self.call_put))
 
     def __str__(self):
-        return ("O:%s:%.2d%.2d%.2d:%d:%s" %
-                (self.security, self.year % 100, self.month, self.day,
-                 self.shifted_strike(), self.call_put))
+        return ("O:%s:%.4d%.2d%.2d:%.2f:%s" %
+                (self.security, self.year, self.month, self.day,
+                 self.strike, self.call_put))
 
     def shifted_strike(self):
         return int(math.ceil(self.strike * 1000.0))
@@ -207,7 +207,7 @@ class Future(Security):
 
     def encode_into(self, bs):
         bs.append("$")
-        # 64 comes from 2<<5 where 1 is for option
+        # 64 comes from 2<<5 where 2 is for future
         bs.append(64 | len(self.symbol))
         bs.extend(self.symbol)
 
