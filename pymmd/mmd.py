@@ -452,6 +452,27 @@ def encode_uint(v, bs):
 def encode_int(v, bs):
     return encode_uint(v * 2 if v >= 0 else -v * 2 - 1, bs)
 
+def encode_fast_int(v, bs):
+    if v == 0:
+        bs.append(0)
+        return
+
+    if -128 <= v < 128:
+        bs.append(0x01)
+        fmt = "!b"
+    elif -32768 <= v < 32768:
+        bs.append(0x02)
+        fmt = "!h"
+    elif -2147483648 <= v < 2147483648:
+        bs.append(0x04)
+        fmt = "!i"
+    elif -9223372036854775808 <= v < 9223372036854775808:
+        bs.append(0x08)
+        fmt = "!q"
+    else:
+        raise MMDEncodeError("Integer value too large to encode: %s" % v)
+    bs.extend(struct.pack(fmt, v))
+
 def encode_double(v, bs):
     return bs.extend(struct.pack("!d", v))
 
@@ -462,8 +483,16 @@ def encode_str(v, bs):
     encode_uint(len(v), bs)
     bs.extend(v)
 
+def encode_fast_str(v, bs):
+    encode_fast_int(len(v), bs)
+    bs.extend(v)
+
 def encode_bytes(v, bs):
     encode_uint(len(v), bs)
+    bs.extend(v)
+
+def encode_fast_bytes(v, bs):
+    encode_fast_int(len(v), bs)
     bs.extend(v)
 
 def encode_bool(v, bs):
@@ -473,43 +502,84 @@ def encode_datetime(dt, bs):
     ts = int(time.mktime(dt.timetuple())) * us_per_s + dt.microsecond
     encode_int(ts, bs)
 
+def encode_fast_datetime(dt, bs):
+    ts = int(time.mktime(dt.timetuple())) * us_per_s + dt.microsecond
+    bs.extend(struct.pack("!q", ts))
+
 def encode_uuid(uuid, bs):
     bs.extend(uuid.bytes)
 
+def encode_fast_array(a, bs):
+    encode_fast_int(len(a), bs)
+    for e in a:
+        encode_into(e, bs)
+
 mmd_code_and_encoders = {
-    int: ("L", encode_int),
-    long: ("L", encode_int),
-    float: ("D", encode_double),
-    bool: ("", encode_bool),
-    NoneType: ("N", None),
-    str: ("S", encode_str),
-    unicode: ("S", lambda u, bs: encode_str(str(u), bs)),
-    uuid.UUID: ("U", encode_uuid),
-    datetime: ("#", encode_datetime),
-    bytearray: ("b", encode_bytes),
+    "1.0": {
+        int: ("L", encode_int),
+        long: ("L", encode_int),
+        float: ("D", encode_double),
+        bool: ("", encode_bool),
+        NoneType: ("N", None),
+        str: ("S", encode_str),
+        unicode: ("S", lambda u, bs: encode_str(str(u), bs)),
+        uuid.UUID: ("U", encode_uuid),
+        datetime: ("#", encode_datetime),
+        bytearray: ("b", encode_bytes),
+        },
+    "1.1": {
+        int: ("", encode_fast_int),
+        long: ("", encode_fast_int),
+        float: ("D", encode_double),
+        bool: ("", encode_bool),
+        NoneType: ("N", None),
+        str: ("s", encode_fast_str),
+        unicode: ("s", lambda u, bs: encode_fast_str(str(u), bs)),
+        uuid.UUID: ("U", encode_uuid),
+        datetime: ("z", encode_fast_datetime),
+        bytearray: ("q", encode_fast_bytes),
+        list: ("a", encode_fast_array),
+        },
 }
 
+codec_version = "1.1"
+
 def encode_into(v, bs):
-    if type(v) in mmd_code_and_encoders:
-        code, encoder = mmd_code_and_encoders[type(v)]
+    if type(v) in mmd_code_and_encoders[codec_version]:
+        code, encoder = mmd_code_and_encoders[codec_version][type(v)]
         bs.extend(code)
         if encoder:
             encoder(v, bs)
     elif hasattr(v, "encode_into"):
         v.encode_into(bs)
     elif hasattr(v, "iteritems"):
-        bs.append("m")
-        encode_uint(len(v), bs)
+        if codec_version == "1.0":
+            bs.append("m")
+            encode_uint(len(v), bs)
+        elif codec_version == "1.1":
+            bs.append("r")
+            encode_fast_int(len(v), bs)
+        else:
+            raise MMDEncodeError("Unsupported codec version: %s" %
+                                 codec_version)
         for vk, vv in v.iteritems():
             encode_into(vk, bs)
             encode_into(vv, bs)
     elif hasattr(v, "__iter__"):
-        bs.append("A")
         lbs = bytearray()
         n = -1
         for n, e in enumerate(v):
             encode_into(e, lbs)
-        encode_uint(n + 1, bs)
+
+        if codec_version == "1.0":
+            bs.append("A")
+            encode_uint(n + 1, bs)
+        elif codec_version == "1.1":
+            bs.append("a")
+            encode_fast_int(n + 1, bs)
+        else:
+            raise MMDEncodeError("Unsupported codec version: %s" %
+                                 codec_version)
         bs.extend(lbs)
     else:
         raise MMDEncodeError(
