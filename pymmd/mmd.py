@@ -84,8 +84,15 @@ class MMDError(Exception, _MMDEncodable):
         return MMDError(code=decode(bs), msg=decode(bs))
 
     def encode_into(self, bs):
-        bs.append("E")
-        encode_int(self.code.code, bs)
+        if codec_version == "1.0":
+            bs.append("E")
+            encode_int(self.code.code, bs)
+        elif codec_version == "1.1":
+            bs.append("e")
+            encode_fast_int(self.code.code, bs)
+        else:
+            raise MMDEncodeError("Unsupported codec version: %s" %
+                                 codec_version)
         encode_into(self.msg, bs)
 
 class Security(object):
