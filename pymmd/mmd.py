@@ -114,7 +114,7 @@ class Security(object):
             return Option(parts[0], yyyy, mm, dd,
                           float(parts[2]) / 1000, parts[3])
         else:
-            raise MMDDecodeError("Unknown SecurityKey type: '%s'" % c)
+            raise MMDDecodeError("Unknown SecurityKey type: '%s'" % key)
 
     @staticmethod
     def decode_id(bs):
