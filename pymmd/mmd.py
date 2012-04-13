@@ -1,4 +1,4 @@
-import errno, logging, math, socket, struct, sys, time, threading, traceback
+import logging, math, socket, struct, sys, time, threading, traceback
 from cStringIO import StringIO
 import uuid
 from datetime import datetime
