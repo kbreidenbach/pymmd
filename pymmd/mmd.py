@@ -1,4 +1,4 @@
-import logging, math, socket, struct, sys, time, threading, traceback
+import logging, math, os, socket, struct, sys, time, threading, traceback
 from cStringIO import StringIO
 import uuid
 from datetime import datetime
@@ -123,19 +123,22 @@ class Security(object):
         sym_sz = typ_sym_sz & 0xf
         if typ == 0:
             sym = Stock(bs.read(sym_sz))
+            bs.seek(16 - 1 - sym_sz, os.SEEK_CUR)
             return sym
         elif typ == 1:
             cp = "C" if ((typ_sym_sz >> 4) & 0x1) == 0 else "P"
             month_day = ord(bs.read(1))
             day_year = ord(bs.read(1))
-            year = 1970 + day_year & 0x7f
+            year = 1970 + (day_year & 0x7f)
             month = month_day >> 4
             day = (month_day & 0xf) << 1 | day_year >> 7
             security = bs.read(sym_sz)
             strike = struct.unpack("!I", bs.read(4))[0] / 1000.0
+            bs.seek(16 - 3 - sym_sz - 4, os.SEEK_CUR)
             return Option(security, year, month, day, strike, cp)
         elif typ == 2:
             fut = Future(bs.read(sym_sz))
+            bs.seek(16 - 1 - sym_sz, os.SEEK_CUR)
             return fut
         else:
             raise MMDDecodeError("Unknown SecurityId type: %d" % typ)
