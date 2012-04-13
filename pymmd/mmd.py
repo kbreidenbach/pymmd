@@ -246,7 +246,7 @@ class MMDChannelCreate(_MMDReplyable, _MMDEncodable, _SlotsRepr):
         self.body=_resolve_body(body, kwargs)
         self.chan_type=chan_type
         self.chan_id = chan_id or uuid.uuid1()
-        self.auth_id = auth_id or uuid.uuid1()
+        self.auth_id = auth_id or uuid.UUID(int=0)
         self.timeout = timeout
 
     @staticmethod
@@ -766,7 +766,7 @@ It might produce cleaner code to use 'c.myservice(myargs)' rather then
             h = f.set
 
         if auth_id is None:
-            auth_id = uuid.uuid1()
+            auth_id = uuid.UUID(int=0)
 
         cc = MMDChannelCreate(service=service, body=body, timeout=timeout,
                               auth_id=auth_id, chan_type="call", **kwargs)
@@ -799,7 +799,7 @@ Handler should be an object that as the following (callback) methods:
 It might produce cleaner code to use 'c.myservice.subscribe(myargs)'
 rather then 'c.subscribe("myservice", myargs)'"""
         if auth_id is None:
-            auth_id = uuid.uuid1()
+            auth_id = uuid.UUID(int=0)
 
         cc = MMDChannelCreate(service=service, body=body, timeout=timeout,
                               auth_id=auth_id, chan_type="subscribe")
