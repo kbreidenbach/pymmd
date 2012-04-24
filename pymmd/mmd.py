@@ -163,7 +163,7 @@ class Stock(Security):
         bs.extend("\0" * (16 - 1 - len(self.symbol)))
 
 class Option(Security):
-    __slots__ = ('security', 'year', 'month', 'day', 'strike', 'call_pus')
+    __slots__ = ('security', 'year', 'month', 'day', 'strike', 'call_put')
     def __init__(self, security, year, month, day, strike, call_put):
         self.security = security
         self.year = year
