@@ -96,7 +96,6 @@ class MMDError(Exception, _MMDEncodable):
         encode_into(self.msg, bs)
 
 class Security(object):
-    pass
 
     @staticmethod
     def decode_key(key):
