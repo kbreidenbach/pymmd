@@ -1,7 +1,7 @@
 import logging, math, os, socket, struct, sys, time, threading, traceback
 from cStringIO import StringIO
 import uuid
-from datetime import datetime
+import datetime
 from collections import namedtuple
 from types import NoneType
 import futures
@@ -109,7 +109,7 @@ class Security(object):
             yy = int(parts[1][:2])
             mm = int(parts[1][2:4])
             dd = int(parts[1][4:])
-            yyyy = datetime.now().year // 100 * 100 + yy
+            yyyy = datetime.datetime.now().year // 100 * 100 + yy
             return Option(parts[0], yyyy, mm, dd,
                           float(parts[2]) / 1000, parts[3])
         else:
@@ -366,12 +366,12 @@ def decode_fast_bytes(bs):
 us_per_s = int(1e6)
 def decode_datetime(bs):
     ts_us = decode_int(bs)
-    dt = datetime.fromtimestamp(ts_us // us_per_s)
+    dt = datetime.datetime.fromtimestamp(ts_us // us_per_s)
     return dt.replace(microsecond=ts_us % us_per_s)
 
 def decode_fast_datetime(bs):
     ts_us = decode_int_s(bs, 8)
-    dt = datetime.fromtimestamp(ts_us // us_per_s)
+    dt = datetime.datetime.fromtimestamp(ts_us // us_per_s)
     return dt.replace(microsecond=ts_us % us_per_s)
 
 def decode_map(bs):
@@ -526,6 +526,9 @@ def encode_fast_array(a, bs):
     for e in a:
         encode_into(e, bs)
 
+def date_to_dt(d):
+    return datetime.datetime.combine(d, datetime.time())
+
 mmd_code_and_encoders = {
     "1.0": {
         int: ("L", encode_int),
@@ -536,7 +539,8 @@ mmd_code_and_encoders = {
         str: ("S", encode_str),
         unicode: ("S", lambda u, bs: encode_str(str(u), bs)),
         uuid.UUID: ("U", encode_uuid),
-        datetime: ("#", encode_datetime),
+        datetime.datetime: ("#", encode_datetime),
+        datetime.date: ("#", lambda d, bs: encode_datetime(date_to_dt(d), bs)),
         bytearray: ("b", encode_bytes),
         },
     "1.1": {
@@ -548,7 +552,8 @@ mmd_code_and_encoders = {
         str: ("s", encode_fast_str),
         unicode: ("s", lambda u, bs: encode_fast_str(str(u), bs)),
         uuid.UUID: ("U", encode_uuid),
-        datetime: ("z", encode_fast_datetime),
+        datetime.datetime: ("z", encode_fast_datetime),
+        datetime.date: ("#", lambda d, bs: encode_datetime(date_to_dt(d), bs)),
         bytearray: ("q", encode_fast_bytes),
         list: ("a", encode_fast_array),
         },
