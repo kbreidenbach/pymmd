@@ -946,6 +946,8 @@ message."""
             else:
                 assert False, ("Unknown channel msg type: %s, msg: %s" %
                                (type(msg), repr(msg)))
+        except MMDError, e:
+            msg.close(e)
         except Exception, e:
             classname = "%s.%s" % (e.__class__.__module__, e.__class__.__name__)
             logging.error("Exception (%s(%s)) while handling mmd message. "
