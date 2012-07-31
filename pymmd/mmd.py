@@ -196,7 +196,7 @@ class Option(Security):
                   (self.year - 1970) & 0x7f)
         bs.extend(self.security)
         bs.extend(struct.pack("!I", self.shifted_strike()))
-        bs.extend("\0" * (16 - 3 - len(self.symbol) - 4))
+        bs.extend("\0" * (16 - 3 - len(self.security) - 4))
 
 class Future(Security):
     __slots__ = ('symbol',)
