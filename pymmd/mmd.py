@@ -838,13 +838,13 @@ to the handler to be a subclass of MMDService which takes care of
 a bunch of stuff for you."""
         with self._svcs_lock:
             self._svcs[service] = handler
-        self.serviceregistry(service)
+        self.serviceregistry({"action": "register", "name": service})
 
     def unregister(self, service):
         """Unregister a service."""
         with self._svcs_lock:
             del self._svcs[service]
-        self.serviceregistry({"unregister": service})
+        self.serviceregistry({"action": "unregister", "name": service})
 
     def __getattr__(self, name):
         return MMDRemoteService(service=self, client=self, path=[name])
