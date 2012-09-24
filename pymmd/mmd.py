@@ -6,8 +6,6 @@ from collections import namedtuple
 from types import NoneType
 import futures
 
-wire_version = (1,0)
-
 class MMDEncodeError(Exception):
     pass
 
@@ -265,14 +263,39 @@ class MMDChannelCreate(_MMDReplyable, _MMDEncodable, _SlotsRepr):
                                 auth_id=decode_uuid(bs),
                                 body=decode(bs))
 
+    @staticmethod
+    def decode_fast(bs):
+        return MMDChannelCreate(chan_id = decode_uuid(bs),
+                                chan_type =
+                                {"C": "call",
+                                 "S": "subscribe"}[bs.read(1)],
+                                service=bs.read(ord(bs.read(1))),
+                                timeout=struct.unpack("!H", bs.read(2)),
+                                auth_id=decode_uuid(bs),
+                                body=decode(bs))
+
     def encode_into(self, bs):
-        bs.append("C")
-        bs.extend(self.chan_id.bytes)
-        bs.append({"call": "C", "subscribe": "S"}[self.chan_type])
-        encode_str(self.service, bs)
-        encode_uint(self.timeout, bs)
-        bs.extend(self.auth_id.bytes)
-        encode_into(self.body, bs)
+        if codec_version == "1.0":
+            bs.append("C")
+            bs.extend(self.chan_id.bytes)
+            bs.append({"call": "C", "subscribe": "S"}[self.chan_type])
+            encode_str(self.service, bs)
+            encode_uint(self.timeout, bs)
+            bs.extend(self.auth_id.bytes)
+            encode_into(self.body, bs)
+        elif codec_version == "1.1":
+            bs.append("c")
+            bs.extend(self.chan_id.bytes)
+            bs.append({"call": "C", "subscribe": "S"}[self.chan_type])
+            bs.append(len(self.service))
+            bs.extend(self.service)
+            bs.extend(struct.pack("!H", self.timeout))
+            bs.extend(self.auth_id.bytes)
+            encode_into(self.body, bs)
+        else:
+            raise MMDEncodeError("Unsupported codec version: %s" %
+                                 codec_version)
+
 
 class MMDChannelMessage(_MMDEncodable, _MMDReplyable, _SlotsRepr):
     __slots__ = ('chan_id', 'body')
@@ -437,6 +460,7 @@ mmd_decoders = {
     "$": Security.decode_id,
     "E": MMDError.decode,
     "C": MMDChannelCreate.decode,
+    "c": MMDChannelCreate.decode_fast,
     "X": MMDChannelClose.decode,
     "M": MMDChannelMessage.decode,
     "r": decode_fast_map,
@@ -709,6 +733,7 @@ Example: subscribing to services.
         self._s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self._s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._s.connect((self._host, self._port))
+        wire_version = [int(v) for v in codec_version.split(".")]
         self._s.send(struct.pack("!I", len(wire_version)))
         self._s.send(bytearray(wire_version))
 
