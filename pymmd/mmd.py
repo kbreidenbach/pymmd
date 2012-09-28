@@ -656,9 +656,14 @@ Example: subscribing to services.
   c.services.subscribe(handler=sh)
 """
     def __init__(self, host="localhost", port=9999,
-                 thread_class=threading.Thread):
-        self._s = MMDRealConnection(host, port, thread_class)
-        self._c = MMDRealConnection(host, port, thread_class)
+                 thread_class=threading.Thread,
+                 inst=""):
+        if len(inst) > 0:
+            inst = "." + inst
+        self._s = MMDRealConnection(host, port, thread_class,
+                                    inst="services"+inst)
+        self._c = MMDRealConnection(host, port, thread_class,
+                                    inst="clients"+inst)
 
     def call(self, service, body=None,
              timeout=0, auth_id=None, handler=None, **kwargs):
@@ -713,13 +718,14 @@ Example: subscribing to services.
   c.services.subscribe(handler=sh)
 """
     def __init__(self, host="localhost", port=9999,
-                 thread_class=threading.Thread):
+                 thread_class=threading.Thread, inst=""):
         self._host = host
         self._port = port
         self._chans = {}
         self._chans_lock = threading.Lock()
         self._svcs = {}
         self._svcs_lock = threading.Lock()
+        self._inst = inst
         self._connect()
         self._recv_thread = thread_class(target=self._recv_loop)
 
@@ -734,8 +740,9 @@ Example: subscribing to services.
         self._s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._s.connect((self._host, self._port))
         wire_version = [int(v) for v in codec_version.split(".")]
-        self._s.send(struct.pack("!I", len(wire_version)))
-        self._s.send(bytearray(wire_version))
+        bs = bytearray(wire_version) + "pymmd." + self._inst
+        self._s.send(struct.pack("!I", len(bs)))
+        self._s.send(bs)
 
     def send_msg(self, m):
         if isinstance(m, MMDChannelClose):
